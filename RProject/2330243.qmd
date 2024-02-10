@@ -1,0 +1,208 @@
+---
+title: "Data Exploration on 2021 England Census Data"
+author: "Saola Gbenga Ifeoluwa"
+format:
+  html:
+    code-fold: true
+    code-link: true
+    toc: true
+    toc-location: left
+    toc-expand: true
+    number-sections: true
+    
+bibliography: references.bib
+editor: visual
+---
+
+```{=html}
+<style>
+h1 {
+  font-size: 20pt;
+}
+</style>
+```
+```{=html}
+<style>
+h2 {
+  color: #424858;
+  font-size: 16pt;
+}
+</style>
+```
+# Loading R packages
+
+I used tidyverse documentation [@tidyverse2019] for data cleaning and R Programming code for exploration and visualization [@rsoftware] and Quarto [@quarto2022] documentations for markdown.
+
+```{r}
+#| label: load-packages
+#| include: true
+#| eval: true
+#| results: hide
+library(ggplot2)
+library(patchwork)
+library(tidyverse)
+```
+
+# Reading dataset into RStudio
+
+```{r}
+data <- read.csv("C:/Users/gsaola/Downloads/data-1.csv")
+head(data)
+```
+
+# Data preprocessing & feature engineering
+
+## Handling mising values
+
+Missing values spotted in the data are below: Mar_Sat=6,144 \| INC=6,173 \| Highest.Ed=1,123
+
+```{r}
+clean_data <- data[complete.cases(data), ]
+```
+
+## Categorize Age data into Age_Group
+
+```{r}
+
+age_breaks <- c(-Inf, 10, 20, 30, 40, 50, 60, Inf)
+age_labels <- c("<10", "10-19", "20-29", "30-39", "40-49", "50-59", "60+")
+clean_data$Age_Group <- cut(clean_data$Age, breaks = age_breaks, labels = age_labels, right = FALSE)
+```
+
+## Renaming columns
+
+```{r}
+new_column_names <- c("Marital_Status", "Income", "Gender", "all_rooms_behind_door", "Ethnicity", "Highest_education")
+colnames(clean_data)[c(4, 5, 6, 7, 8,9)] <- new_column_names
+```
+
+## Renaming column values of gender
+
+0:Female \| 1:Male
+
+```{r}
+clean_data$Gender <- ifelse(clean_data$Gender == 0, "Female", "Male")
+clean_data$all_rooms_behind_door <- ifelse(clean_data$all_rooms_behind_door == 0, "Yes", "No")
+```
+
+## Taking a peek at the Cleaned data
+
+```{r}
+head(clean_data)
+```
+
+# Data Visualization
+
+## Demographic Overview - Population Pyramid
+
+The stacked bar below shows the distribution of age by gender for guidance on product curation and marketing strategies tailored to specific age groups.
+
+```{r}
+ggplot(clean_data, aes(x = Age_Group, fill = Gender)) +
+  geom_bar(stat = "count", position = "dodge") +
+  coord_flip() +
+  labs(title = "Demographic Overview - Age Distribution",
+       x = "Count",
+       y = "Age Group")
+```
+
+## Marital Status Composition - Pie Chart
+
+The pie chart below displays the distribution of individuals across different marital statuses, offering a quick overview of family structures.
+
+```{r}
+ggplot(clean_data, aes(x = "", fill = Marital_Status)) +
+  geom_bar(width = 1, stat = "count") +
+  coord_polar(theta = "y") +
+  labs(title = "Marital Status Composition",
+       fill = "Marital Status") +
+  theme_void()
+```
+
+## Income Distribution - Histogram
+
+The graph below shows income distribution, explaining how pricing strategies and products can be affected by customer income.
+
+```{r}
+ggplot(clean_data, aes(x = Income)) +
+  geom_histogram(binwidth = 5000, fill = "skyblue", color = "black") +
+  labs(title = "Income Distribution",
+       x = "Annual Income (in pounds)",
+       y = "Count")
+```
+
+## Privacy Preferences - Stacked Bar Chart
+
+The chart below shows the privacy preference of individuals in the data which can be factored into product design.
+
+```{r}
+ggplot(clean_data, aes(x = factor(all_rooms_behind_door), fill = factor(all_rooms_behind_door))) +
+  geom_bar() +
+  labs(title = "Privacy Preferences",
+       x = "Response to Question H8",
+       y = "Count")
+```
+
+## Education distribution
+
+```{r}
+plot5 <- clean_data %>%
+  count(Highest_education) %>%
+  ggplot(aes(x = Highest_education, y = n)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Education Distribution") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+plot5
+```
+
+## Age Distribution
+
+```{r}
+plot6 <- clean_data %>%
+  count(Age_Group) %>%
+  ggplot(aes(x = Age_Group, y = n)) +
+  geom_bar(stat = "identity") +
+  ggtitle("Age Group Distribution") +
+  theme(axis.text.x = element_text(size = 15))
+
+plot6
+```
+
+## Education levels by gender
+
+```{r}
+plot7 <- ggplot(clean_data, aes(x = Highest_education, fill = Gender)) +
+  geom_bar(position = "dodge", show.legend = TRUE) +
+  labs(title = "Distribution of Education Levels by Gender")
+
+plot7  + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+## Income distribution by family structure and age
+
+Below is the income distribution by family structure, providing further insight to which to target for family products and premium services.
+
+```{r}
+ggplot(clean_data, aes(x = Age, y = Income, color = Marital_Status)) +
+  geom_point(size = 3) +  # Adjust the size as needed
+  theme(
+    plot.margin = unit(c(0.5, 0.5, 0.5, 0.5), "cm")  # Adjust the margins as needed
+  ) +
+  labs(title = "Scatter Plot of Age vs Income by Marital Status")
+```
+
+# Conclusion
+
+Older people are more than the young ones and therefore, it does not fully represent the population of customers that can be targeted for this business.
+
+Secondly, majority of the people in the dataset are low income earners, if further details on location could be provided, further analysis could be carried out to know if a new area should be considered for the premium products
+
+# Recommendation
+
+Market research should be carried out to know the preferences of customers when it comes to home products and services that best suit their age group, income and privacy.
+
+A well distributed sample of data should be provided, such that would represent the entire population.
+
+```{references}
+```
